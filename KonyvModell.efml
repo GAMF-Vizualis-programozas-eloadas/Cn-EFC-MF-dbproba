@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<efcore context-namespace="dbproba" namespace="dbproba" p1:name="cnModel" p1:Guid="ad8f0e5f-9ee8-4ef6-9b51-eae1dd9d26c1" xmlns:p1="http://devart.com/schemas/EntityDeveloper/1.0">
+  <class name="Könyv" entity-set="Könyvek" table="Konyvek" schema="dbo" p1:Guid="7e4a1324-c6cc-46e0-86d2-890631f4832c">
+    <id name="Id" type="Int16" value-generated="OnAdd" p1:ValidateRequired="true" p1:Guid="8f38fd14-aa75-4b37-88c5-1aa0b98e6bb8">
+      <column name="" />
+    </id>
+    <property name="Szerzők" type="String" p1:ValidateRequired="true" p1:Guid="544d58ac-e177-4ece-b579-fb8abee4e236">
+      <column name="" />
+    </property>
+    <property name="Cím" type="String" p1:ValidateRequired="true" p1:Guid="85ce8048-4c7f-4e1a-91e8-7b51b7f3caa5">
+      <column name="" />
+    </property>
+    <property name="KiadásÉve" type="Int16" p1:ValidateRequired="true" p1:Guid="d4246d80-8abd-40da-84f0-eb18ddcca22c">
+      <column name="" />
+    </property>
+  </class>
+</efcore>
