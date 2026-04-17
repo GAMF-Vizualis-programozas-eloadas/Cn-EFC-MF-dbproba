@@ -2,36 +2,27 @@
 using Microsoft.EntityFrameworkCore;
 
 // ===============================================================================
-// ENTITY FRAMEWORK CORE 
+// ENTITY FRAMEWORK CORE alapú adtbáziselérés
 // ===============================================================================
 // Teljes CRUD (Create, Read, Update, Delete) műveleti példa
-// Entity Framework Core használatával SQL Server LocalDB adatbázison.
+// Entity Framework Core használatával SQL Server LocalDB adatbázissal.
 // ===============================================================================
-
-Console.WriteLine("Entity Framework Core - Könyvek");
+Console.WriteLine("Entity Framework Core példa - Könyvek");
 
 // ===============================================================================
 // 1. ADATBÁZIS KONTEXTUS LÉTREHOZÁSA
 // ===============================================================================
-// A "using var" egy C# 8.0-tól elérhető funkció, amely automatikus erőforrás-kezelést biztosít.
-// 
-// FONTOS MŰKÖDÉS:
-// - A "using" blokk végén automatikusan meghívja a Dispose() metódust
-// - A Dispose() lezárja az adatbázis-kapcsolatot és felszabadítja az erőforrásokat
-// - Az érvényességi kör után (a fájl végén) a cn objektum már NEM használható
-// 
-// MIÉRT HASZNOS:
-// - Elkerüli a memóriaszivárgást
-// - Biztosítja, hogy a kapcsolat mindig lezáródik, még kivétel esetén is
-// - Nem kell manuálisan meghívni a Close() vagy Dispose() metódusokat
+// A "using var" automatikus erőforrás-kezelést biztosít. A blokk végén automatikusan
+// meghívja a Dispose() metódust, ami lezárja az adatbázis-kapcsolatot, és felszabadítja
+// az erőforrásokat. 
 using var cn = new cnModel();
 
 // ===============================================================================
 // 2. ADATBÁZIS SÉMA LÉTREHOZÁSA
 // ===============================================================================
 // Az EnsureCreated() metódus:
-// - Ellenőrzi, hogy létezik-e az adatbázis
-// - Ha NEM létezik, létrehozza az adatbázist és a táblákat a modell osztályok alapján
+// - Ellenőrzi, hogy létezik-e a tábla (táblák) az adatbázisban
+// - Ha NEM létezik (léteznek), létrehozza azokat az entitásmodell osztályok alapján.
 // - Ha már létezik, NEM csinál semmit (nem frissíti a sémát!)
 cn.Database.EnsureCreated();
 
@@ -47,15 +38,11 @@ if (!cn.Könyvek.Any())
     // ---------------------------------------------------------------------------
     // ADATOK HOZZÁADÁSA A CHANGE TRACKER-HEZ
     // ---------------------------------------------------------------------------
-    // FONTOS: Az Add() metódus NEM ír azonnal az adatbázisba!
+    // Az Add() metódus NEM ír azonnal az adatbázisba!
     // Csak a memóriában lévő "change tracker"-be kerülnek az entitások.
-    // 
     // A change tracker:
     // - Nyomon követi az entitások változásait
     // - A SaveChanges() hívásakor generálja az INSERT SQL utasításokat
-    // - Lehetővé teszi a batch műveletet (egyszerre több INSERT)
-    
-    // Magyar klasszikus irodalmi művek hozzáadása
     cn.Könyvek.Add(new Könyv { Cím = "Egri csillagok", Szerzők = "Gárdonyi Géza", KiadásÉve = 1901 });
     cn.Könyvek.Add(new Könyv { Cím = "Az ember tragédiája", Szerzők = "Madách Imre", KiadásÉve = 1862 });
     cn.Könyvek.Add(new Könyv { Cím = "Tüskevár", Szerzők = "Fekete István", KiadásÉve = 1957 });
@@ -73,18 +60,15 @@ if (!cn.Könyvek.Any())
     // 3. Tranzakcióban végrehajtja őket
     // 4. Ha minden sikeres, commit-ol, különben rollback
     // 5. Visszaadja az érintett sorok számát
-    // 
-    // ANALÓGIA: Mint a bevásárlókosár - az Add() beteszi a termékeket,
-    // a SaveChanges() pedig kifizeti őket a pénztárnál.
     cn.SaveChanges();
     Console.WriteLine("Adatok sikeresen mentve az adatbázisba.");
   }
   catch (Exception ex)
   {
-    // Hibakezelés: Ha bármilyen hiba történik (pl. kapcsolódási probléma, séma hiba)
+    // Ha bármilyen hiba történik (pl. kapcsolódási probléma, séma hiba)
     // kiírjuk a hibaüzenetet és kilépünk a programból
     Console.WriteLine($"Hiba történt az adatok mentése során: {ex.Message}");
-    return; // Kilépés a Main metódusból
+    return; 
   }
 }
 
@@ -93,10 +77,10 @@ if (!cn.Könyvek.Any())
 // ===============================================================================
 // A ToList() metódus:
 // - SQL SELECT * FROM Könyvek utasítást generál és végrehajtja
-// - Az összes rekordot memóriába tölti egy List<Könyv> kollekcióba
+// - A memóriába tölti az összes rekordot egy List<Könyv> gyűjteménybe
 // - Ez az "eager loading" - minden adat azonnal betöltődik
 // 
-// FIGYELEM: Nagy táblák esetén (pl. 100,000+ rekord) ez lassú lehet!
+// Nagy táblák esetén (pl. 100,000+ rekord) ez lassú lehet!
 // Ilyenkor használj:
 // - Take() és Skip() metódusokat lapozáshoz
 // - Where() szűrést csak a szükséges adatok lekérdezéséhez
@@ -113,23 +97,17 @@ foreach (var könyv in könyvek)
 // ===============================================================================
 // 5. SZŰRT LEKÉRDEZÉS LINQ HASZNÁLATÁVAL (READ - SZŰRÉS)
 // ===============================================================================
-// LINQ (Language Integrated Query) - a C# nyelv része
-// Lehetővé teszi adatbázis-lekérdezések írását C# szintaxissal
-// 
 // A Where() metódus működése:
 // 1. Lambda kifejezést vár paraméterként: k => k.KiadásÉve < 1950
 //    - "k" a lambda paraméter (egy Könyv objektum)
 //    - "k.KiadásÉve < 1950" a szűrési feltétel
 // 2. EF Core SQL-re fordítja: WHERE KiadásÉve < 1950
-// 3. A ToList() végrehajtja a lekérdezést (lazy evaluation előtt csak expression tree!)
-// 
-// MEGJEGYZÉS: A komment "1900 előtti" könyveket ír, de a kód 1950-et használ!
-// Ez valószínűleg elírás - a kommentet vagy a kódot javítani kellene.
+// 3. A ToList() végrehajtja a lekérdezést 
 var régiek = cn.Könyvek
                .Where(k => k.KiadásÉve < 1950)
                .ToList();
 
-Console.WriteLine("\n1900 előtti könyvek a könyvtárban:");
+Console.WriteLine("\n1950 előtti könyvek a könyvtárban:");
 foreach (var könyv in régiek)
 {
   Console.WriteLine($"Cím: {könyv.Cím}, Szerzők: {könyv.Szerzők}, Kiadás éve: {könyv.KiadásÉve}");
@@ -144,16 +122,11 @@ foreach (var könyv in régiek)
 // - ALTERNATÍVA: First() - kivételt dob ha nincs találat (kockázatosabb)
 // - ALTERNATÍVA: Single() - kivételt dob ha több találat van (szigorúbb)
 var konyv = cn.Könyvek.FirstOrDefault(k => k.Cím == "Abigél");
-
-// Null ellenőrzés - kötelező a NullReferenceException elkerülésére!
 if (konyv != null)
 {
   // ---------------------------------------------------------------------------
   // AUTOMATIKUS VÁLTOZÁS KÖVETÉS
   // ---------------------------------------------------------------------------
-  // FONTOS: Nem kell külön "Update()" metódust hívni!
-  // Az EF Core automatikusan figyeli az entitás tulajdonságainak változásait.
-  // 
   // Amikor meghívjuk a SaveChanges()-t:
   // 1. EF Core észreveszi, hogy a KiadásÉve tulajdonság megváltozott
   // 2. Generál egy UPDATE SQL utasítást
@@ -235,8 +208,8 @@ try
     // A "master" egy rendszer-adatbázis SQL Server-ben
     // Ezen keresztül lehet adatbázis-szintű műveleteket végrehajtani (create, drop, detach)
     // 
-    // A connection string módosítása:
-    // - Az eredeti connection string-et vesszük
+    // A kapcsolati sztring módosítása:
+    // - Kiolvassuk az eredeti kapcsolati sztringet
     // - Lecseréljük benne a Database paramétert "master"-re
     var mastercs = cn.Database.GetDbConnection()
         .ConnectionString.Replace($"Database={db}", "Database=master");
@@ -254,7 +227,7 @@ try
     // - SET SINGLE_USER: Egyfelhasználós módba kapcsol
     // - WITH ROLLBACK IMMEDIATE: Azonnal megszakít minden aktív tranzakciót
     // 
-    // FIGYELEM: Ez destructív művelet! Minden más felhasználó kiesik!
+    // FIGYELEM: Ez destruktív művelet! Minden más felhasználó kiesik!
     using (var cmd = masterconn.CreateCommand())
     {
         cmd.CommandText = $"ALTER DATABASE [{db}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE";
@@ -285,11 +258,5 @@ catch (Exception ex)
     // (pl. másik alkalmazás használja az adatbázist, nincs jogosultság, stb.)
     Console.WriteLine($"\nHiba az adatbázis leválasztása során: {ex.Message}");
 }
-
-// ===============================================================================
-// PROGRAM VÉGE
-// ===============================================================================
-// A using var cn automatikusan meghívja itt a Dispose()-t
-// A kapcsolat lezáródik és az erőforrások felszabadulnak
 
 
